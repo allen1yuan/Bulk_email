@@ -1,0 +1,350 @@
+const form = document.getElementById('send-form');
+const sendBtn = document.getElementById('send-btn');
+const progressSection = document.getElementById('progress-section');
+const progressList = document.getElementById('progress-list');
+const summaryEl = document.getElementById('summary');
+const previewIframe = document.getElementById('preview-iframe');
+
+function escapeHtml(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function isValidUrl(str) {
+  if (!str) return false;
+  try {
+    const url = new URL(str);
+    return url.protocol === 'http:' || url.protocol === 'https:';
+  } catch {
+    return false;
+  }
+}
+
+const SOCIAL_ICONS = {
+  facebook: 'https://img.icons8.com/ios-filled/50/555555/facebook-new.png',
+  youtube: 'https://img.icons8.com/ios-filled/50/555555/youtube-play.png',
+  instagram: 'https://img.icons8.com/ios-filled/50/555555/instagram-new.png',
+  pinterest: 'https://img.icons8.com/ios-filled/50/555555/pinterest.png',
+  tiktok: 'https://img.icons8.com/ios-filled/50/555555/tiktok.png',
+};
+
+function renderSocialIcon(key, url) {
+  const iconImg = `<img src="${SOCIAL_ICONS[key]}" width="20" height="20" alt="${key}" style="display:block;border:0;" />`;
+  const cell = isValidUrl(url)
+    ? `<a href="${escapeHtml(url)}" target="_blank" style="display:block;">${iconImg}</a>`
+    : iconImg;
+  return `<td style="padding-right:10px;">${cell}</td>`;
+}
+
+function buildSignatureHtml(sig) {
+  const {
+    senderName, senderTitle, companyName, companyTagline,
+    contactEmail, websiteUrl,
+    facebookUrl, youtubeUrl, instagramUrl, pinterestUrl, tiktokUrl,
+  } = sig || {};
+
+  if (!senderName && !senderTitle && !companyName && !companyTagline && !contactEmail && !websiteUrl) {
+    return '';
+  }
+
+  const lines = [];
+  if (senderName) lines.push(`<strong>${escapeHtml(senderName)}</strong>`);
+  if (senderTitle) lines.push(escapeHtml(senderTitle));
+  if (companyName) lines.push(`<strong style="color:#1a73e8;">${escapeHtml(companyName)}</strong>`);
+  if (companyTagline) lines.push(`<span style="color:#666;font-size:12px;">${escapeHtml(companyTagline)}</span>`);
+
+  const contactLines = [];
+  if (contactEmail) {
+    contactLines.push(`e: <a href="mailto:${escapeHtml(contactEmail)}" style="color:#1a73e8;text-decoration:none;">${escapeHtml(contactEmail)}</a>`);
+  }
+  if (isValidUrl(websiteUrl)) {
+    contactLines.push(`<a href="${escapeHtml(websiteUrl)}" style="color:#1a73e8;text-decoration:none;" target="_blank">${escapeHtml(websiteUrl)}</a>`);
+  }
+
+  const socialCells = [
+    renderSocialIcon('facebook', facebookUrl),
+    renderSocialIcon('youtube', youtubeUrl),
+    renderSocialIcon('instagram', instagramUrl),
+    renderSocialIcon('pinterest', pinterestUrl),
+    renderSocialIcon('tiktok', tiktokUrl),
+  ].join('');
+
+  return `<tr>
+    <td style="padding:24px 40px 0;border-top:1px solid #eee;">
+      <table role="presentation" cellpadding="0" cellspacing="0" style="font-size:14px;color:#1a1a1a;line-height:1.6;">
+        <tr><td>${lines.join('<br />')}</td></tr>
+        ${contactLines.length ? `<tr><td style="padding-top:8px;">${contactLines.join('<br />')}</td></tr>` : ''}
+        <tr><td style="padding-top:12px;"><table role="presentation" cellpadding="0" cellspacing="0"><tr>${socialCells}</tr></table></td></tr>
+      </table>
+    </td>
+  </tr>`;
+}
+
+function buildEmailHtml({ bannerImageUrl, bannerLinkUrl, content, signature, confidentialityText }) {
+  const paragraphs = String(content || '')
+    .split(/\n{2,}/)
+    .map((block) => escapeHtml(block).replace(/\n/g, '<br />'))
+    .filter((block) => block.trim().length > 0)
+    .map((block) => `<p style="margin:0 0 16px;">${block}</p>`)
+    .join('');
+
+  const bannerImg = `<img src="${escapeHtml(bannerImageUrl)}" alt="" width="600" style="width:100%;max-width:600px;display:block;border:0;" />`;
+  const bannerHtml = isValidUrl(bannerImageUrl)
+    ? `<tr><td style="padding-top:24px;">${
+        isValidUrl(bannerLinkUrl)
+          ? `<a href="${escapeHtml(bannerLinkUrl)}" target="_blank" style="display:block;">${bannerImg}</a>`
+          : bannerImg
+      }</td></tr>`
+    : '';
+
+  const signatureHtml = buildSignatureHtml(signature);
+
+  const footerHtml = confidentialityText
+    ? `<tr><td style="padding:20px 40px;border-top:1px solid #eee;color:#999;font-size:11px;line-height:1.5;">${escapeHtml(confidentialityText)}</td></tr>`
+    : '';
+
+  return `<!DOCTYPE html>
+<html>
+  <body style="margin:0;padding:0;background-color:#f4f4f7;font-family:Arial, Helvetica, sans-serif;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f4f4f7;padding:24px 0;">
+      <tr>
+        <td align="center">
+          <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="background-color:#ffffff;border-radius:8px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.08);">
+            <tr>
+              <td style="padding:32px 40px 0;color:#1a1a1a;font-size:15px;line-height:1.6;">
+                ${paragraphs || '<p style="margin:0;color:#999;">(Your message will appear here)</p>'}
+              </td>
+            </tr>
+            ${signatureHtml}
+            ${bannerHtml}
+            ${footerHtml}
+            <tr><td style="height:24px;line-height:24px;font-size:0;">&nbsp;</td></tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>`;
+}
+
+const PREVIEW_FIELD_IDS = [
+  'content', 'bannerImageUrl', 'bannerLinkUrl', 'confidentialityText',
+  'senderName', 'senderTitle', 'companyName', 'companyTagline', 'contactEmail', 'websiteUrl',
+  'facebookUrl', 'youtubeUrl', 'instagramUrl', 'pinterestUrl', 'tiktokUrl',
+];
+
+function getSignatureFromForm() {
+  return {
+    senderName: document.getElementById('senderName').value.trim(),
+    senderTitle: document.getElementById('senderTitle').value.trim(),
+    companyName: document.getElementById('companyName').value.trim(),
+    companyTagline: document.getElementById('companyTagline').value.trim(),
+    contactEmail: document.getElementById('contactEmail').value.trim(),
+    websiteUrl: document.getElementById('websiteUrl').value.trim(),
+    facebookUrl: document.getElementById('facebookUrl').value.trim(),
+    youtubeUrl: document.getElementById('youtubeUrl').value.trim(),
+    instagramUrl: document.getElementById('instagramUrl').value.trim(),
+    pinterestUrl: document.getElementById('pinterestUrl').value.trim(),
+    tiktokUrl: document.getElementById('tiktokUrl').value.trim(),
+  };
+}
+
+function updatePreview() {
+  const bannerImageUrl = document.getElementById('bannerImageUrl').value.trim();
+  const bannerLinkUrl = document.getElementById('bannerLinkUrl').value.trim();
+  const content = document.getElementById('content').value;
+  const confidentialityText = document.getElementById('confidentialityText').value.trim();
+  const html = buildEmailHtml({
+    bannerImageUrl, bannerLinkUrl, content,
+    signature: getSignatureFromForm(),
+    confidentialityText,
+  });
+  previewIframe.srcdoc = html;
+}
+
+PREVIEW_FIELD_IDS.forEach((id) => {
+  document.getElementById(id).addEventListener('input', updatePreview);
+});
+
+const STORAGE_KEY = 'gmailBulkSender:v1';
+const ALWAYS_SAVED_FIELD_IDS = [
+  'gmailUser', 'subject', 'content', 'bannerImageUrl', 'bannerLinkUrl', 'confidentialityText',
+  'senderName', 'senderTitle', 'companyName', 'companyTagline', 'contactEmail', 'websiteUrl',
+  'facebookUrl', 'youtubeUrl', 'instagramUrl', 'pinterestUrl', 'tiktokUrl',
+];
+const rememberCheckbox = document.getElementById('rememberPassword');
+const saveStatusEl = document.getElementById('save-status');
+let saveStatusTimer = null;
+
+function loadSavedData() {
+  let saved;
+  try {
+    saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+  } catch {
+    saved = {};
+  }
+  ALWAYS_SAVED_FIELD_IDS.forEach((id) => {
+    if (typeof saved[id] === 'string') document.getElementById(id).value = saved[id];
+  });
+  if (saved.rememberPassword) {
+    rememberCheckbox.checked = true;
+    if (typeof saved.appPassword === 'string') {
+      document.getElementById('appPassword').value = saved.appPassword;
+    }
+  }
+}
+
+function persistData() {
+  const data = {};
+  ALWAYS_SAVED_FIELD_IDS.forEach((id) => {
+    data[id] = document.getElementById(id).value;
+  });
+  data.rememberPassword = rememberCheckbox.checked;
+  data.appPassword = rememberCheckbox.checked ? document.getElementById('appPassword').value : '';
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  saveStatusEl.textContent = 'Saved on this device.';
+  clearTimeout(saveStatusTimer);
+  saveStatusTimer = setTimeout(() => { saveStatusEl.textContent = ''; }, 1500);
+}
+
+loadSavedData();
+updatePreview();
+
+[...ALWAYS_SAVED_FIELD_IDS, 'appPassword'].forEach((id) => {
+  document.getElementById(id).addEventListener('input', persistData);
+});
+rememberCheckbox.addEventListener('change', persistData);
+
+document.getElementById('clear-saved-btn').addEventListener('click', () => {
+  localStorage.removeItem(STORAGE_KEY);
+  ALWAYS_SAVED_FIELD_IDS.forEach((id) => {
+    const el = document.getElementById(id);
+    el.value = el.defaultValue;
+  });
+  document.getElementById('appPassword').value = '';
+  rememberCheckbox.checked = false;
+  updatePreview();
+  saveStatusEl.textContent = 'Saved data cleared.';
+  clearTimeout(saveStatusTimer);
+  saveStatusTimer = setTimeout(() => { saveStatusEl.textContent = ''; }, 1500);
+});
+
+function parseRecipients(raw) {
+  const seen = new Set();
+  const result = [];
+  for (const item of raw.split(/[\n,]/)) {
+    const trimmed = item.trim();
+    if (!trimmed || seen.has(trimmed.toLowerCase())) continue;
+    seen.add(trimmed.toLowerCase());
+    result.push(trimmed);
+  }
+  return result;
+}
+
+function renderPending(recipients) {
+  progressList.innerHTML = '';
+  for (const recipient of recipients) {
+    const li = document.createElement('li');
+    li.className = 'pending';
+    li.dataset.recipient = recipient;
+    li.innerHTML = `<span>${recipient}</span><span class="status">waiting</span>`;
+    progressList.appendChild(li);
+  }
+}
+
+function updateRow(recipient, status, error) {
+  const li = progressList.querySelector(`li[data-recipient="${CSS.escape(recipient)}"]`);
+  if (!li) return;
+  li.className = status;
+  li.querySelector('.status').textContent = status === 'sent' ? 'sent' : `error${error ? ': ' + error : ''}`;
+}
+
+async function parseSSEStream(response, onEvent) {
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = '';
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+
+    const chunks = buffer.split('\n\n');
+    buffer = chunks.pop();
+
+    for (const chunk of chunks) {
+      const lines = chunk.split('\n');
+      let event = 'message';
+      let data = '';
+      for (const line of lines) {
+        if (line.startsWith('event:')) event = line.slice(6).trim();
+        if (line.startsWith('data:')) data = line.slice(5).trim();
+      }
+      if (data) {
+        onEvent(event, JSON.parse(data));
+      }
+    }
+  }
+}
+
+form.addEventListener('submit', async (e) => {
+  e.preventDefault();
+
+  const gmailUser = document.getElementById('gmailUser').value.trim();
+  const appPassword = document.getElementById('appPassword').value;
+  const subject = document.getElementById('subject').value;
+  const content = document.getElementById('content').value;
+  const bannerImageUrl = document.getElementById('bannerImageUrl').value.trim();
+  const bannerLinkUrl = document.getElementById('bannerLinkUrl').value.trim();
+  const confidentialityText = document.getElementById('confidentialityText').value.trim();
+  const signature = getSignatureFromForm();
+  const recipients = parseRecipients(document.getElementById('recipients').value);
+
+  if (recipients.length === 0) {
+    alert('Please enter at least one recipient.');
+    return;
+  }
+
+  sendBtn.disabled = true;
+  sendBtn.textContent = 'Sending...';
+  progressSection.classList.remove('hidden');
+  summaryEl.textContent = '';
+  renderPending(recipients);
+
+  try {
+    const response = await fetch('/api/send', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        gmailUser, appPassword, subject, content,
+        bannerImageUrl, bannerLinkUrl, signature, confidentialityText, recipients,
+      }),
+    });
+
+    if (!response.ok) {
+      const body = await response.json().catch(() => ({}));
+      summaryEl.textContent = body.error || `Request failed (${response.status})`;
+      summaryEl.style.color = '#d93025';
+      return;
+    }
+
+    await parseSSEStream(response, (event, data) => {
+      if (event === 'progress') {
+        updateRow(data.recipient, data.status, data.error);
+      } else if (event === 'done') {
+        summaryEl.style.color = '';
+        summaryEl.textContent = `Done: ${data.sent} sent, ${data.failed} failed, ${data.total} total.`;
+      }
+    });
+  } catch (err) {
+    summaryEl.textContent = `Unexpected error: ${err.message}`;
+    summaryEl.style.color = '#d93025';
+  } finally {
+    sendBtn.disabled = false;
+    sendBtn.textContent = 'Send';
+  }
+});

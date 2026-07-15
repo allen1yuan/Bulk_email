@@ -1,0 +1,15 @@
+{
+  "name": "gmail-bulk-sender",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Local web app to send an email to a list of recipients one by one via Gmail SMTP.",
+  "main": "server.js",
+  "scripts": {
+    "dev": "node server.js",
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "nodemailer": "^9.0.3"
+  }
+}

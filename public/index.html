@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Gmail Bulk Sender</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <main class="container">
+    <h1>Gmail Bulk Sender</h1>
+    <p class="subtitle">Send an email to a list of recipients, one at a time, from your own Gmail account.</p>
+
+    <form id="send-form">
+      <fieldset>
+        <legend>Login</legend>
+
+        <label for="gmailUser">Gmail address</label>
+        <input type="email" id="gmailUser" name="gmailUser" placeholder="you@gmail.com" required />
+
+        <label for="appPassword">App Password</label>
+        <input type="password" id="appPassword" name="appPassword" placeholder="16-character app password" autocomplete="off" required />
+        <p class="hint">
+          Generate one at Google Account &rarr; Security &rarr; 2-Step Verification &rarr; App Passwords.
+          Requires 2-Step Verification to be enabled.
+        </p>
+
+        <label class="checkbox-label">
+          <input type="checkbox" id="rememberPassword" name="rememberPassword" />
+          Remember my address and App Password on this device
+        </label>
+        <p class="hint">Stored only in this browser's local storage on your machine, never sent anywhere but Gmail.</p>
+      </fieldset>
+
+      <fieldset>
+        <legend>Compose</legend>
+
+        <label for="subject">Subject</label>
+        <input type="text" id="subject" name="subject" placeholder="Subject" />
+
+        <label for="recipients">Recipients (one per line or comma-separated)</label>
+        <textarea id="recipients" name="recipients" rows="5" placeholder="alice@example.com&#10;bob@example.com" required></textarea>
+
+        <label for="content">Message</label>
+        <textarea id="content" name="content" rows="8" placeholder="Write your email content here... (blank line = new paragraph)"></textarea>
+      </fieldset>
+
+      <fieldset>
+        <legend>Signature</legend>
+
+        <label for="senderName">Name</label>
+        <input type="text" id="senderName" name="senderName" value="Roselind" />
+
+        <label for="senderTitle">Title</label>
+        <input type="text" id="senderTitle" name="senderTitle" value="Stylewe PR Team" />
+
+        <label for="companyName">Company</label>
+        <input type="text" id="companyName" name="companyName" value="STYLEWE" />
+
+        <label for="companyTagline">Tagline</label>
+        <input type="text" id="companyTagline" name="companyTagline" value="An online multi-designer brand featuring independent fashion designers." />
+
+        <label for="contactEmail">Contact email</label>
+        <input type="email" id="contactEmail" name="contactEmail" value="collab04@stylewe.com" />
+
+        <label for="websiteUrl">Website URL</label>
+        <input type="url" id="websiteUrl" name="websiteUrl" value="https://www.stylewe.com/" />
+
+        <label>Social links (optional &mdash; icon is only clickable if a URL is set)</label>
+        <div class="social-grid">
+          <input type="url" id="facebookUrl" name="facebookUrl" placeholder="Facebook URL" />
+          <input type="url" id="youtubeUrl" name="youtubeUrl" placeholder="Youtube URL" />
+          <input type="url" id="instagramUrl" name="instagramUrl" placeholder="Instagram URL" />
+          <input type="url" id="pinterestUrl" name="pinterestUrl" placeholder="Pinterest URL" />
+          <input type="url" id="tiktokUrl" name="tiktokUrl" placeholder="TikTok URL" />
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Banner &amp; Footer</legend>
+
+        <label for="bannerImageUrl">Banner image URL (optional, shown at the bottom)</label>
+        <input type="url" id="bannerImageUrl" name="bannerImageUrl" placeholder="https://example.com/banner.png" />
+
+        <label for="bannerLinkUrl">Banner link URL (optional)</label>
+        <input type="url" id="bannerLinkUrl" name="bannerLinkUrl" placeholder="https://example.com" />
+        <p class="hint">If set, the banner image becomes a clickable link. Leave blank for a plain image or no banner.</p>
+
+        <label for="confidentialityText">Confidentiality notice</label>
+        <textarea id="confidentialityText" name="confidentialityText" rows="4">The content of this email is confidential and intended for the recipient specified in message only. It is strictly forbidden to share any part of this message with any third party, without a written consent of the sender. If you received this message by mistake, please reply to this message and follow with its deletion, so that we can ensure such a mistake does not occur in the future.</textarea>
+      </fieldset>
+
+      <p class="hint">Note: Gmail limits regular accounts to roughly 500 sends per day.</p>
+
+      <div class="button-row">
+        <button type="submit" id="send-btn">Send</button>
+        <button type="button" id="clear-saved-btn">Clear saved data</button>
+      </div>
+      <p id="save-status" class="hint"></p>
+    </form>
+
+    <section class="preview-section">
+      <h2>Live Preview</h2>
+      <div class="preview-frame">
+        <iframe id="preview-iframe" title="Email preview"></iframe>
+      </div>
+    </section>
+
+    <section id="progress-section" class="hidden">
+      <h2>Progress</h2>
+      <ul id="progress-list"></ul>
+      <p id="summary"></p>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
