@@ -12,6 +12,7 @@ A small web app for sending a templated email to a list of recipients, one at a 
 - **Randomized send delay** — set a min/max range (seconds); a random delay in that range is used before each send, so the pattern looks less mechanical to spam filters than a fixed interval.
 - **Per-recipient progress stream** — see each send succeed or fail in real time via Server-Sent Events.
 - **Server-side template/login persistence** — your Gmail address, signature, banner, and delay settings are saved to a local JSON file on the server (`data/saved-template.json`, git-ignored, `0600` permissions). The App Password is only saved if you explicitly check "Remember my address and App Password." Note this file is shared by anyone using the same running instance — see [Security notes](#security-notes).
+- **Shipped default template** — `default-template.json` (tracked in git) provides the starting subject/message/signature/banner/delay values on a fresh deploy, before anyone has saved anything through the form. It never contains credentials — the Gmail address field there is a public-facing business contact, not a secret, and the App Password always starts blank regardless of what this file contains.
 - **Shared access gate** — when deployed for a team, gate the whole app behind a shared username/password (HTTP Basic Auth) so it isn't an open relay to anyone who finds the link.
 
 ## Running locally

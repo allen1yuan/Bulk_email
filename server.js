@@ -9,12 +9,23 @@ const PORT = process.env.PORT || 3001;
 
 const DATA_DIR = path.join(__dirname, 'data');
 const SAVED_DATA_PATH = path.join(DATA_DIR, 'saved-template.json');
+const DEFAULT_TEMPLATE_PATH = path.join(__dirname, 'default-template.json');
+
+function readDefaultTemplate() {
+  try {
+    return JSON.parse(fs.readFileSync(DEFAULT_TEMPLATE_PATH, 'utf8'));
+  } catch {
+    return {};
+  }
+}
 
 function readSavedData() {
   try {
     return JSON.parse(fs.readFileSync(SAVED_DATA_PATH, 'utf8'));
   } catch {
-    return {};
+    // No instance-specific save yet — fall back to the shipped template
+    // defaults (never contains credentials; those always start blank).
+    return readDefaultTemplate();
   }
 }
 
