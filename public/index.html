@@ -110,11 +110,16 @@
       <fieldset>
         <legend>Sending</legend>
 
-        <label for="delaySeconds">Delay between emails (seconds)</label>
-        <input type="number" id="delaySeconds" name="delaySeconds" min="0.5" max="300" step="0.5" value="1.5" />
+        <label>Delay between emails (seconds) &mdash; randomized within this range</label>
+        <div class="field-row">
+          <input type="number" id="delayMinSeconds" name="delayMinSeconds" min="0.5" max="300" step="0.5" value="3" placeholder="Min" aria-label="Minimum delay (seconds)" />
+          <span>to</span>
+          <input type="number" id="delayMaxSeconds" name="delayMaxSeconds" min="0.5" max="300" step="0.5" value="10" placeholder="Max" aria-label="Maximum delay (seconds)" />
+        </div>
         <p class="hint">
-          Applies between each recipient in this batch. Longer delays look less automated to Gmail's spam filters &mdash;
-          for small daily outreach batches, 5&ndash;15s is safer than the default. Min 0.5s, max 300s.
+          A random delay in this range is picked before each send. Varying the gap looks less automated to Gmail's
+          spam filters than a fixed interval &mdash; for small daily outreach batches, 5&ndash;15s is safer than the
+          default. Min 0.5s, max 300s.
         </p>
       </fieldset>
 

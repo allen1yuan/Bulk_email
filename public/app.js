@@ -72,7 +72,7 @@ function buildSignatureHtml(sig) {
 
   const contactLines = [];
   if (contactEmail) {
-    contactLines.push(`e: <a href="mailto:${escapeHtml(contactEmail)}" style="color:${linkColorSafe};text-decoration:none;">${escapeHtml(contactEmail)}</a>`);
+    contactLines.push(`E: <a href="mailto:${escapeHtml(contactEmail)}" style="color:${linkColorSafe};text-decoration:none;">${escapeHtml(contactEmail)}</a>`);
   }
   if (isValidUrl(websiteUrl)) {
     contactLines.push(`<a href="${escapeHtml(websiteUrl)}" style="color:${linkColorSafe};text-decoration:none;" target="_blank">${escapeHtml(websiteUrl)}</a>`);
@@ -196,7 +196,7 @@ const ALWAYS_SAVED_FIELD_IDS = [
   'senderName', 'senderTitle', 'companyName', 'companyTagline', 'contactEmail', 'websiteUrl',
   'facebookUrl', 'youtubeUrl', 'instagramUrl', 'pinterestUrl', 'tiktokUrl',
   'senderNameColor', 'senderTitleColor', 'companyNameColor', 'companyTaglineColor', 'linkColor',
-  'delaySeconds',
+  'delayMinSeconds', 'delayMaxSeconds',
 ];
 const rememberCheckbox = document.getElementById('rememberPassword');
 const saveStatusEl = document.getElementById('save-status');
@@ -325,11 +325,17 @@ form.addEventListener('submit', async (e) => {
   const bannerLinkUrl = document.getElementById('bannerLinkUrl').value.trim();
   const confidentialityText = document.getElementById('confidentialityText').value.trim();
   const signature = getSignatureFromForm();
-  const delaySeconds = parseFloat(document.getElementById('delaySeconds').value);
+  const delayMinSeconds = parseFloat(document.getElementById('delayMinSeconds').value);
+  const delayMaxSeconds = parseFloat(document.getElementById('delayMaxSeconds').value);
   const recipients = parseRecipients(document.getElementById('recipients').value);
 
   if (recipients.length === 0) {
     alert('Please enter at least one recipient.');
+    return;
+  }
+
+  if (!Number.isFinite(delayMinSeconds) || !Number.isFinite(delayMaxSeconds) || delayMinSeconds > delayMaxSeconds) {
+    alert('Please set a valid delay range (minimum must not be greater than maximum).');
     return;
   }
 
@@ -345,7 +351,8 @@ form.addEventListener('submit', async (e) => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         gmailUser, appPassword, subject, content,
-        bannerImageUrl, bannerLinkUrl, signature, confidentialityText, recipients, delaySeconds,
+        bannerImageUrl, bannerLinkUrl, signature, confidentialityText, recipients,
+        delayMinSeconds, delayMaxSeconds,
       }),
     });
 

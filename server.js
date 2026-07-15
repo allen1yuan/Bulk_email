@@ -7,7 +7,8 @@ const app = express();
 const PORT = process.env.PORT || 3001;
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const DEFAULT_SEND_DELAY_MS = 1500;
+const DEFAULT_MIN_DELAY_MS = 3000;
+const DEFAULT_MAX_DELAY_MS = 10000;
 const MIN_SEND_DELAY_MS = 500;
 const MAX_SEND_DELAY_MS = 300000;
 const HEX_COLOR_RE = /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/;
@@ -16,10 +17,19 @@ function safeColor(color, fallback) {
   return HEX_COLOR_RE.test(color || '') ? color : fallback;
 }
 
-function resolveDelayMs(delaySeconds) {
-  const ms = Number(delaySeconds) * 1000;
-  if (!Number.isFinite(ms)) return DEFAULT_SEND_DELAY_MS;
-  return Math.min(Math.max(ms, MIN_SEND_DELAY_MS), MAX_SEND_DELAY_MS);
+function resolveDelayRangeMs(delayMinSeconds, delayMaxSeconds) {
+  let minMs = Number(delayMinSeconds) * 1000;
+  let maxMs = Number(delayMaxSeconds) * 1000;
+  if (!Number.isFinite(minMs)) minMs = DEFAULT_MIN_DELAY_MS;
+  if (!Number.isFinite(maxMs)) maxMs = DEFAULT_MAX_DELAY_MS;
+  minMs = Math.min(Math.max(minMs, MIN_SEND_DELAY_MS), MAX_SEND_DELAY_MS);
+  maxMs = Math.min(Math.max(maxMs, MIN_SEND_DELAY_MS), MAX_SEND_DELAY_MS);
+  if (minMs > maxMs) [minMs, maxMs] = [maxMs, minMs];
+  return { minMs, maxMs };
+}
+
+function randomDelayMs(minMs, maxMs) {
+  return Math.round(minMs + Math.random() * (maxMs - minMs));
 }
 
 function safeEqual(a, b) {
@@ -132,7 +142,7 @@ function buildSignatureHtml(sig) {
 
   const contactLines = [];
   if (contactEmail) {
-    contactLines.push(`e: <a href="mailto:${escapeHtml(contactEmail)}" style="color:${linkColorSafe};text-decoration:none;">${escapeHtml(contactEmail)}</a>`);
+    contactLines.push(`E: <a href="mailto:${escapeHtml(contactEmail)}" style="color:${linkColorSafe};text-decoration:none;">${escapeHtml(contactEmail)}</a>`);
   }
   if (isValidUrl(websiteUrl)) {
     contactLines.push(`<a href="${escapeHtml(websiteUrl)}" style="color:${linkColorSafe};text-decoration:none;" target="_blank">${escapeHtml(websiteUrl)}</a>`);
@@ -207,10 +217,11 @@ function buildEmailHtml({ bannerImageUrl, bannerLinkUrl, content, signature, con
 app.post('/api/send', async (req, res) => {
   const {
     gmailUser, appPassword, subject, content,
-    bannerImageUrl, bannerLinkUrl, signature, confidentialityText, recipients, delaySeconds,
+    bannerImageUrl, bannerLinkUrl, signature, confidentialityText, recipients,
+    delayMinSeconds, delayMaxSeconds,
   } = req.body || {};
 
-  const sendDelayMs = resolveDelayMs(delaySeconds);
+  const { minMs: delayMinMs, maxMs: delayMaxMs } = resolveDelayRangeMs(delayMinSeconds, delayMaxSeconds);
 
   if (!gmailUser || !EMAIL_RE.test(gmailUser)) {
     return res.status(400).json({ error: 'A valid Gmail address is required.' });
@@ -277,7 +288,7 @@ app.post('/api/send', async (req, res) => {
     }
 
     if (i < parsedRecipients.length - 1) {
-      await sleep(sendDelayMs);
+      await sleep(randomDelayMs(delayMinMs, delayMaxMs));
     }
   }
 

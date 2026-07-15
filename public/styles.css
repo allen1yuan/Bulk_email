@@ -148,8 +148,15 @@ button:disabled {
 
 .field-row input[type="text"],
 .field-row input[type="email"],
-.field-row input[type="url"] {
+.field-row input[type="url"],
+.field-row input[type="number"] {
   flex: 1;
+}
+
+.field-row span {
+  color: #777;
+  font-size: 0.85rem;
+  flex-shrink: 0;
 }
 
 .field-row input[type="color"] {
