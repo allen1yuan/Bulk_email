@@ -280,10 +280,16 @@ app.post('/api/send', async (req, res) => {
   }
 
   const transporter = nodemailer.createTransport({
-    service: 'gmail',
+    // Explicit host/port 587 (STARTTLS) instead of the 'service: gmail'
+    // shorthand (which defaults to port 465) — some hosts (e.g. Render)
+    // block outbound 465 but allow 587.
+    host: 'smtp.gmail.com',
+    port: 587,
+    secure: false,
+    requireTLS: true,
     auth: { user: gmailUser, pass: appPassword },
-    // Some hosts (e.g. Render) advertise outbound IPv6 that isn't actually
-    // routable to Gmail's SMTP endpoints, causing ENETUNREACH. Force IPv4.
+    // Some hosts advertise outbound IPv6 that isn't actually routable to
+    // Gmail's SMTP endpoints, causing ENETUNREACH. Force IPv4.
     family: 4,
   });
 
