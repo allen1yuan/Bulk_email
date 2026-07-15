@@ -7,7 +7,20 @@ const app = express();
 const PORT = process.env.PORT || 3001;
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const SEND_DELAY_MS = 1500;
+const DEFAULT_SEND_DELAY_MS = 1500;
+const MIN_SEND_DELAY_MS = 500;
+const MAX_SEND_DELAY_MS = 300000;
+const HEX_COLOR_RE = /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/;
+
+function safeColor(color, fallback) {
+  return HEX_COLOR_RE.test(color || '') ? color : fallback;
+}
+
+function resolveDelayMs(delaySeconds) {
+  const ms = Number(delaySeconds) * 1000;
+  if (!Number.isFinite(ms)) return DEFAULT_SEND_DELAY_MS;
+  return Math.min(Math.max(ms, MIN_SEND_DELAY_MS), MAX_SEND_DELAY_MS);
+}
 
 function safeEqual(a, b) {
   const bufA = Buffer.from(a);
@@ -98,24 +111,31 @@ function buildSignatureHtml(sig) {
     senderName, senderTitle, companyName, companyTagline,
     contactEmail, websiteUrl,
     facebookUrl, youtubeUrl, instagramUrl, pinterestUrl, tiktokUrl,
+    senderNameColor, senderTitleColor, companyNameColor, companyTaglineColor, linkColor,
   } = sig || {};
 
   if (!senderName && !senderTitle && !companyName && !companyTagline && !contactEmail && !websiteUrl) {
     return '';
   }
 
+  const nameColor = safeColor(senderNameColor, '#1a1a1a');
+  const titleColor = safeColor(senderTitleColor, '#1a1a1a');
+  const companyColor = safeColor(companyNameColor, '#1a73e8');
+  const taglineColor = safeColor(companyTaglineColor, '#666666');
+  const linkColorSafe = safeColor(linkColor, '#1a73e8');
+
   const lines = [];
-  if (senderName) lines.push(`<strong>${escapeHtml(senderName)}</strong>`);
-  if (senderTitle) lines.push(escapeHtml(senderTitle));
-  if (companyName) lines.push(`<strong style="color:#1a73e8;">${escapeHtml(companyName)}</strong>`);
-  if (companyTagline) lines.push(`<span style="color:#666;font-size:12px;">${escapeHtml(companyTagline)}</span>`);
+  if (senderName) lines.push(`<strong style="color:${nameColor};">${escapeHtml(senderName)}</strong>`);
+  if (senderTitle) lines.push(`<span style="color:${titleColor};">${escapeHtml(senderTitle)}</span>`);
+  if (companyName) lines.push(`<strong style="color:${companyColor};">${escapeHtml(companyName)}</strong>`);
+  if (companyTagline) lines.push(`<span style="color:${taglineColor};font-size:12px;">${escapeHtml(companyTagline)}</span>`);
 
   const contactLines = [];
   if (contactEmail) {
-    contactLines.push(`e: <a href="mailto:${escapeHtml(contactEmail)}" style="color:#1a73e8;text-decoration:none;">${escapeHtml(contactEmail)}</a>`);
+    contactLines.push(`e: <a href="mailto:${escapeHtml(contactEmail)}" style="color:${linkColorSafe};text-decoration:none;">${escapeHtml(contactEmail)}</a>`);
   }
   if (isValidUrl(websiteUrl)) {
-    contactLines.push(`<a href="${escapeHtml(websiteUrl)}" style="color:#1a73e8;text-decoration:none;" target="_blank">${escapeHtml(websiteUrl)}</a>`);
+    contactLines.push(`<a href="${escapeHtml(websiteUrl)}" style="color:${linkColorSafe};text-decoration:none;" target="_blank">${escapeHtml(websiteUrl)}</a>`);
   }
 
   const socialCells = [
@@ -187,8 +207,10 @@ function buildEmailHtml({ bannerImageUrl, bannerLinkUrl, content, signature, con
 app.post('/api/send', async (req, res) => {
   const {
     gmailUser, appPassword, subject, content,
-    bannerImageUrl, bannerLinkUrl, signature, confidentialityText, recipients,
+    bannerImageUrl, bannerLinkUrl, signature, confidentialityText, recipients, delaySeconds,
   } = req.body || {};
+
+  const sendDelayMs = resolveDelayMs(delaySeconds);
 
   if (!gmailUser || !EMAIL_RE.test(gmailUser)) {
     return res.status(400).json({ error: 'A valid Gmail address is required.' });
@@ -255,7 +277,7 @@ app.post('/api/send', async (req, res) => {
     }
 
     if (i < parsedRecipients.length - 1) {
-      await sleep(SEND_DELAY_MS);
+      await sleep(sendDelayMs);
     }
   }
 

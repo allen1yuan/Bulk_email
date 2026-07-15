@@ -24,6 +24,12 @@ function isValidUrl(str) {
   }
 }
 
+const HEX_COLOR_RE = /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/;
+
+function safeColor(color, fallback) {
+  return HEX_COLOR_RE.test(color || '') ? color : fallback;
+}
+
 const SOCIAL_ICONS = {
   facebook: 'https://img.icons8.com/ios-filled/50/555555/facebook-new.png',
   youtube: 'https://img.icons8.com/ios-filled/50/555555/youtube-play.png',
@@ -45,24 +51,31 @@ function buildSignatureHtml(sig) {
     senderName, senderTitle, companyName, companyTagline,
     contactEmail, websiteUrl,
     facebookUrl, youtubeUrl, instagramUrl, pinterestUrl, tiktokUrl,
+    senderNameColor, senderTitleColor, companyNameColor, companyTaglineColor, linkColor,
   } = sig || {};
 
   if (!senderName && !senderTitle && !companyName && !companyTagline && !contactEmail && !websiteUrl) {
     return '';
   }
 
+  const nameColor = safeColor(senderNameColor, '#1a1a1a');
+  const titleColor = safeColor(senderTitleColor, '#1a1a1a');
+  const companyColor = safeColor(companyNameColor, '#1a73e8');
+  const taglineColor = safeColor(companyTaglineColor, '#666666');
+  const linkColorSafe = safeColor(linkColor, '#1a73e8');
+
   const lines = [];
-  if (senderName) lines.push(`<strong>${escapeHtml(senderName)}</strong>`);
-  if (senderTitle) lines.push(escapeHtml(senderTitle));
-  if (companyName) lines.push(`<strong style="color:#1a73e8;">${escapeHtml(companyName)}</strong>`);
-  if (companyTagline) lines.push(`<span style="color:#666;font-size:12px;">${escapeHtml(companyTagline)}</span>`);
+  if (senderName) lines.push(`<strong style="color:${nameColor};">${escapeHtml(senderName)}</strong>`);
+  if (senderTitle) lines.push(`<span style="color:${titleColor};">${escapeHtml(senderTitle)}</span>`);
+  if (companyName) lines.push(`<strong style="color:${companyColor};">${escapeHtml(companyName)}</strong>`);
+  if (companyTagline) lines.push(`<span style="color:${taglineColor};font-size:12px;">${escapeHtml(companyTagline)}</span>`);
 
   const contactLines = [];
   if (contactEmail) {
-    contactLines.push(`e: <a href="mailto:${escapeHtml(contactEmail)}" style="color:#1a73e8;text-decoration:none;">${escapeHtml(contactEmail)}</a>`);
+    contactLines.push(`e: <a href="mailto:${escapeHtml(contactEmail)}" style="color:${linkColorSafe};text-decoration:none;">${escapeHtml(contactEmail)}</a>`);
   }
   if (isValidUrl(websiteUrl)) {
-    contactLines.push(`<a href="${escapeHtml(websiteUrl)}" style="color:#1a73e8;text-decoration:none;" target="_blank">${escapeHtml(websiteUrl)}</a>`);
+    contactLines.push(`<a href="${escapeHtml(websiteUrl)}" style="color:${linkColorSafe};text-decoration:none;" target="_blank">${escapeHtml(websiteUrl)}</a>`);
   }
 
   const socialCells = [
@@ -135,6 +148,7 @@ const PREVIEW_FIELD_IDS = [
   'content', 'bannerImageUrl', 'bannerLinkUrl', 'confidentialityText',
   'senderName', 'senderTitle', 'companyName', 'companyTagline', 'contactEmail', 'websiteUrl',
   'facebookUrl', 'youtubeUrl', 'instagramUrl', 'pinterestUrl', 'tiktokUrl',
+  'senderNameColor', 'senderTitleColor', 'companyNameColor', 'companyTaglineColor', 'linkColor',
 ];
 
 function getSignatureFromForm() {
@@ -150,6 +164,11 @@ function getSignatureFromForm() {
     instagramUrl: document.getElementById('instagramUrl').value.trim(),
     pinterestUrl: document.getElementById('pinterestUrl').value.trim(),
     tiktokUrl: document.getElementById('tiktokUrl').value.trim(),
+    senderNameColor: document.getElementById('senderNameColor').value,
+    senderTitleColor: document.getElementById('senderTitleColor').value,
+    companyNameColor: document.getElementById('companyNameColor').value,
+    companyTaglineColor: document.getElementById('companyTaglineColor').value,
+    linkColor: document.getElementById('linkColor').value,
   };
 }
 
@@ -168,6 +187,7 @@ function updatePreview() {
 
 PREVIEW_FIELD_IDS.forEach((id) => {
   document.getElementById(id).addEventListener('input', updatePreview);
+  document.getElementById(id).addEventListener('change', updatePreview);
 });
 
 const STORAGE_KEY = 'gmailBulkSender:v1';
@@ -175,6 +195,8 @@ const ALWAYS_SAVED_FIELD_IDS = [
   'gmailUser', 'subject', 'content', 'bannerImageUrl', 'bannerLinkUrl', 'confidentialityText',
   'senderName', 'senderTitle', 'companyName', 'companyTagline', 'contactEmail', 'websiteUrl',
   'facebookUrl', 'youtubeUrl', 'instagramUrl', 'pinterestUrl', 'tiktokUrl',
+  'senderNameColor', 'senderTitleColor', 'companyNameColor', 'companyTaglineColor', 'linkColor',
+  'delaySeconds',
 ];
 const rememberCheckbox = document.getElementById('rememberPassword');
 const saveStatusEl = document.getElementById('save-status');
@@ -216,6 +238,7 @@ updatePreview();
 
 [...ALWAYS_SAVED_FIELD_IDS, 'appPassword'].forEach((id) => {
   document.getElementById(id).addEventListener('input', persistData);
+  document.getElementById(id).addEventListener('change', persistData);
 });
 rememberCheckbox.addEventListener('change', persistData);
 
@@ -302,6 +325,7 @@ form.addEventListener('submit', async (e) => {
   const bannerLinkUrl = document.getElementById('bannerLinkUrl').value.trim();
   const confidentialityText = document.getElementById('confidentialityText').value.trim();
   const signature = getSignatureFromForm();
+  const delaySeconds = parseFloat(document.getElementById('delaySeconds').value);
   const recipients = parseRecipients(document.getElementById('recipients').value);
 
   if (recipients.length === 0) {
@@ -321,7 +345,7 @@ form.addEventListener('submit', async (e) => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         gmailUser, appPassword, subject, content,
-        bannerImageUrl, bannerLinkUrl, signature, confidentialityText, recipients,
+        bannerImageUrl, bannerLinkUrl, signature, confidentialityText, recipients, delaySeconds,
       }),
     });
 

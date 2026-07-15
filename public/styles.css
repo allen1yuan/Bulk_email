@@ -140,6 +140,28 @@ button:disabled {
   margin: 0;
 }
 
+.field-row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.field-row input[type="text"],
+.field-row input[type="email"],
+.field-row input[type="url"] {
+  flex: 1;
+}
+
+.field-row input[type="color"] {
+  width: 44px;
+  height: 38px;
+  padding: 2px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
 .preview-section {
   margin-top: 2rem;
   border-top: 1px solid #eee;
