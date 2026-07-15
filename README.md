@@ -42,22 +42,26 @@ Personal Gmail accounts are capped at ~500 recipients/day (Google Workspace: ~2,
 - Only email people you have a legitimate reason to contact, and keep the confidentiality/opt-out footer text.
 - Prefer a Google Workspace domain address over a personal `@gmail.com` address for better sender reputation.
 
-## Deploying (Render)
+## Deploying
 
-This repo includes a `render.yaml` blueprint.
+### Railway (recommended)
+
+Render's **free** tier blocks all outbound SMTP traffic (ports 25, 465, 587) as of September 2025, which breaks Gmail sending entirely — see [Render's changelog](https://render.com/changelog/free-web-services-will-no-longer-allow-outbound-traffic-to-smtp-ports). Railway doesn't have this restriction, so it's the default recommendation here. This repo includes a `railway.json` config.
 
 1. Push this repo to GitHub (already done if you're reading this from the repo).
-2. In the [Render dashboard](https://dashboard.render.com), choose **New → Blueprint** and connect the repo. Render will pick up `render.yaml` automatically.
-3. Set the `ACCESS_USER` and `ACCESS_PASSWORD` environment variables to a username/password you share only with your team — without these set, anyone with the URL can send email through it using any credentials they enter.
-4. Deploy. Render provides a public `https://<service>.onrender.com` URL.
+2. In the [Railway dashboard](https://railway.app/new), choose **Deploy from GitHub repo** and select this repo. Railway auto-detects the Node app via Nixpacks and picks up `railway.json`.
+3. Under the service's **Variables** tab, set `ACCESS_USER` and `ACCESS_PASSWORD` to a username/password you share only with your team — without these set, anyone with the URL can send email through it using any credentials they enter.
+4. Deploy. Railway provides a public `https://<service>.up.railway.app` URL (generate one under **Settings → Networking** if it isn't shown automatically).
 
-Note: the free Render plan spins down when idle, so the first request after a period of inactivity can take 30-60 seconds to wake up.
+### Render (paid tier only)
+
+`render.yaml` is still included if you'd rather use Render — but you must select a **paid** instance type (not the free plan) when creating the service, since only paid Render instances allow outbound SMTP on ports 465/587. Port 25 stays blocked on all Render tiers, which is fine since this app doesn't use it. Otherwise, follow the same steps: **New → Blueprint** in the [Render dashboard](https://dashboard.render.com), connect the repo, set `ACCESS_USER`/`ACCESS_PASSWORD`, deploy.
 
 ## Environment variables
 
 | Variable          | Required | Purpose                                                                 |
 |--------------------|----------|--------------------------------------------------------------------------|
-| `PORT`             | No       | Port to listen on (defaults to `3001`; Render sets this automatically). |
+| `PORT`             | No       | Port to listen on (defaults to `3001`; Railway/Render set this automatically). |
 | `ACCESS_USER`      | No       | Shared username for the HTTP Basic Auth gate. Leave unset to disable.   |
 | `ACCESS_PASSWORD`  | No       | Shared password for the HTTP Basic Auth gate. Leave unset to disable.   |
 
@@ -67,4 +71,4 @@ Note: the free Render plan spins down when idle, so the first request after a pe
 - The persisted-data file (`data/saved-template.json`) is written with `0600` permissions (owner read/write only) and is git-ignored so it's never committed, but it is **shared across every browser/user hitting the same running instance** — it is not per-device like browser storage would be. If you deploy this behind the shared access gate for a team, anyone with the link can see and overwrite the saved Gmail login. Only enable "Remember" on an instance you don't share, or leave it unchecked on shared deployments.
 - Signature colors are validated against a strict hex-color pattern before being inserted into the email HTML, to prevent CSS/markup injection via the form.
 - `ACCESS_USER`/`ACCESS_PASSWORD` gate access to the app itself, not to any individual's Gmail account — each user still supplies their own Gmail credentials.
-- On Render's free tier the filesystem is ephemeral, so the saved-template file (and anything in it) is lost on redeploys or restarts.
+- On Railway and Render, the filesystem is ephemeral by default, so the saved-template file (and anything in it) is lost on redeploys or restarts unless you attach a persistent volume.
