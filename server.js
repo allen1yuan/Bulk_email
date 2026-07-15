@@ -3,11 +3,18 @@ const nodemailer = require('nodemailer');
 const path = require('path');
 const crypto = require('crypto');
 const fs = require('fs');
+const { exec } = require('child_process');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-const DATA_DIR = path.join(__dirname, 'data');
+// When bundled with pkg, __dirname points inside a read-only virtual
+// snapshot, so writable runtime data must live next to the actual
+// executable on disk instead.
+const IS_PACKAGED = typeof process.pkg !== 'undefined';
+const RUNTIME_DIR = IS_PACKAGED ? path.dirname(process.execPath) : __dirname;
+
+const DATA_DIR = path.join(RUNTIME_DIR, 'data');
 const SAVED_DATA_PATH = path.join(DATA_DIR, 'saved-template.json');
 const DEFAULT_TEMPLATE_PATH = path.join(__dirname, 'default-template.json');
 
@@ -349,6 +356,21 @@ app.post('/api/send', async (req, res) => {
   res.end();
 });
 
+function openBrowser(url) {
+  const platform = process.platform;
+  const command =
+    platform === 'win32' ? `start "" "${url}"` :
+    platform === 'darwin' ? `open "${url}"` :
+    `xdg-open "${url}"`;
+  exec(command, (err) => {
+    if (err) console.error('Could not auto-open browser:', err.message);
+  });
+}
+
 app.listen(PORT, () => {
-  console.log(`Gmail bulk sender running at http://localhost:${PORT}`);
+  const url = `http://localhost:${PORT}`;
+  console.log(`Gmail bulk sender running at ${url}`);
+  if (IS_PACKAGED) {
+    openBrowser(url);
+  }
 });

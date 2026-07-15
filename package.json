@@ -4,15 +4,32 @@
   "private": true,
   "description": "Local web app to send an email to a list of recipients one by one via Gmail SMTP.",
   "main": "server.js",
+  "bin": "server.js",
   "engines": {
     "node": ">=18.18.0"
   },
   "scripts": {
     "dev": "node server.js",
-    "start": "node server.js"
+    "start": "node server.js",
+    "package": "pkg . --out-path dist"
   },
   "dependencies": {
     "express": "^4.19.2",
     "nodemailer": "^9.0.3"
+  },
+  "devDependencies": {
+    "@yao-pkg/pkg": "^5.16.1"
+  },
+  "pkg": {
+    "assets": [
+      "public/**/*",
+      "default-template.json"
+    ],
+    "targets": [
+      "node18-win-x64",
+      "node18-macos-x64",
+      "node18-macos-arm64"
+    ],
+    "outputPath": "dist"
   }
 }

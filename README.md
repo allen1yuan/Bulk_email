@@ -15,6 +15,23 @@ A small web app for sending a templated email to a list of recipients, one at a 
 - **Shipped default template** — `default-template.json` (tracked in git) provides the starting subject/message/signature/banner/delay values on a fresh deploy, before anyone has saved anything through the form. It never contains credentials — the Gmail address field there is a public-facing business contact, not a secret, and the App Password always starts blank regardless of what this file contains.
 - **Shared access gate** — when deployed for a team, gate the whole app behind a shared username/password (HTTP Basic Auth) so it isn't an open relay to anyone who finds the link.
 
+## Download the desktop app (no Node.js required)
+
+For Windows and macOS, prebuilt standalone binaries are attached to each [GitHub Release](../../releases) — no Node.js or `npm install` needed.
+
+1. Go to the [Releases page](../../releases) and download the file for your OS:
+   - Windows: `gmail-bulk-sender-win-x64.exe`
+   - macOS: `gmail-bulk-sender-macos-x64` (Intel) or `gmail-bulk-sender-macos-arm64` (Apple Silicon/M-series)
+2. Double-click it. It starts a local server on your machine and opens your default browser to it automatically.
+3. **First-run security warning is expected** — these binaries aren't code-signed, so:
+   - **Windows**: SmartScreen will say "Windows protected your PC." Click **More info → Run anyway**.
+   - **macOS**: Gatekeeper will block it on first launch. Right-click (or Control-click) the file → **Open** → confirm **Open** in the dialog. (A plain double-click after that works normally.)
+4. Everything you save (template, login) is stored in a `data/` folder created next to wherever you put the executable — move the executable, and that folder should move with it if you want to keep your saved data.
+
+This runs the exact same app as `npm run dev` below, just bundled with its own Node.js runtime so nothing needs to be installed first.
+
+To build these yourself instead of using the Releases page: `npm install`, then `npm run package` (requires the `pkg` devDependency, already in `package.json`) — outputs to `dist/`.
+
 ## Running locally
 
 Requires Node.js 18.18+.
