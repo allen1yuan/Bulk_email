@@ -190,7 +190,7 @@ PREVIEW_FIELD_IDS.forEach((id) => {
   document.getElementById(id).addEventListener('change', updatePreview);
 });
 
-const STORAGE_KEY = 'gmailBulkSender:v1';
+const SAVED_DATA_ENDPOINT = '/api/saved-data';
 const ALWAYS_SAVED_FIELD_IDS = [
   'gmailUser', 'subject', 'content', 'bannerImageUrl', 'bannerLinkUrl', 'confidentialityText',
   'senderName', 'senderTitle', 'companyName', 'companyTagline', 'contactEmail', 'websiteUrl',
@@ -201,13 +201,22 @@ const ALWAYS_SAVED_FIELD_IDS = [
 const rememberCheckbox = document.getElementById('rememberPassword');
 const saveStatusEl = document.getElementById('save-status');
 let saveStatusTimer = null;
+let persistTimer = null;
 
-function loadSavedData() {
-  let saved;
+function showSaveStatus(text, isError) {
+  saveStatusEl.textContent = text;
+  saveStatusEl.style.color = isError ? '#d93025' : '';
+  clearTimeout(saveStatusTimer);
+  saveStatusTimer = setTimeout(() => { saveStatusEl.textContent = ''; }, 1500);
+}
+
+async function loadSavedData() {
+  let saved = {};
   try {
-    saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+    const res = await fetch(SAVED_DATA_ENDPOINT);
+    if (res.ok) saved = await res.json();
   } catch {
-    saved = {};
+    // server unreachable or file not yet created — fall through with defaults
   }
   ALWAYS_SAVED_FIELD_IDS.forEach((id) => {
     if (typeof saved[id] === 'string') document.getElementById(id).value = saved[id];
@@ -220,30 +229,46 @@ function loadSavedData() {
   }
 }
 
-function persistData() {
+async function persistData() {
   const data = {};
   ALWAYS_SAVED_FIELD_IDS.forEach((id) => {
     data[id] = document.getElementById(id).value;
   });
   data.rememberPassword = rememberCheckbox.checked;
   data.appPassword = rememberCheckbox.checked ? document.getElementById('appPassword').value : '';
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-  saveStatusEl.textContent = 'Saved on this device.';
-  clearTimeout(saveStatusTimer);
-  saveStatusTimer = setTimeout(() => { saveStatusEl.textContent = ''; }, 1500);
+  try {
+    const res = await fetch(SAVED_DATA_ENDPOINT, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) throw new Error(`status ${res.status}`);
+    showSaveStatus('Saved on the server.', false);
+  } catch {
+    showSaveStatus('Failed to save.', true);
+  }
 }
 
-loadSavedData();
-updatePreview();
+function schedulePersist() {
+  clearTimeout(persistTimer);
+  persistTimer = setTimeout(persistData, 500);
+}
+
+loadSavedData().then(updatePreview);
 
 [...ALWAYS_SAVED_FIELD_IDS, 'appPassword'].forEach((id) => {
-  document.getElementById(id).addEventListener('input', persistData);
-  document.getElementById(id).addEventListener('change', persistData);
+  document.getElementById(id).addEventListener('input', schedulePersist);
+  document.getElementById(id).addEventListener('change', schedulePersist);
 });
-rememberCheckbox.addEventListener('change', persistData);
+rememberCheckbox.addEventListener('change', schedulePersist);
 
-document.getElementById('clear-saved-btn').addEventListener('click', () => {
-  localStorage.removeItem(STORAGE_KEY);
+document.getElementById('clear-saved-btn').addEventListener('click', async () => {
+  clearTimeout(persistTimer);
+  try {
+    await fetch(SAVED_DATA_ENDPOINT, { method: 'DELETE' });
+  } catch {
+    // best-effort; fields are reset locally regardless
+  }
   ALWAYS_SAVED_FIELD_IDS.forEach((id) => {
     const el = document.getElementById(id);
     el.value = el.defaultValue;
@@ -251,9 +276,7 @@ document.getElementById('clear-saved-btn').addEventListener('click', () => {
   document.getElementById('appPassword').value = '';
   rememberCheckbox.checked = false;
   updatePreview();
-  saveStatusEl.textContent = 'Saved data cleared.';
-  clearTimeout(saveStatusTimer);
-  saveStatusTimer = setTimeout(() => { saveStatusEl.textContent = ''; }, 1500);
+  showSaveStatus('Saved data cleared.', false);
 });
 
 function parseRecipients(raw) {

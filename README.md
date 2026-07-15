@@ -11,7 +11,7 @@ A small web app for sending a templated email to a list of recipients, one at a 
 - **Confidentiality/footer notice**, editable.
 - **Randomized send delay** — set a min/max range (seconds); a random delay in that range is used before each send, so the pattern looks less mechanical to spam filters than a fixed interval.
 - **Per-recipient progress stream** — see each send succeed or fail in real time via Server-Sent Events.
-- **Local template/login persistence** — your Gmail address, signature, banner, and delay settings are remembered in the browser's local storage. The App Password is only remembered if you explicitly check "Remember my address and App Password on this device."
+- **Server-side template/login persistence** — your Gmail address, signature, banner, and delay settings are saved to a local JSON file on the server (`data/saved-template.json`, git-ignored, `0600` permissions). The App Password is only saved if you explicitly check "Remember my address and App Password." Note this file is shared by anyone using the same running instance — see [Security notes](#security-notes).
 - **Shared access gate** — when deployed for a team, gate the whole app behind a shared username/password (HTTP Basic Auth) so it isn't an open relay to anyone who finds the link.
 
 ## Running locally
@@ -62,6 +62,8 @@ Note: the free Render plan spins down when idle, so the first request after a pe
 
 ## Security notes
 
-- The Gmail App Password is never stored server-side — it's used to open an SMTP connection for the duration of a single send request and then discarded.
+- The Gmail App Password is only persisted if you check "Remember my address and App Password" — otherwise it's used to open an SMTP connection for the duration of a single send request and then discarded.
+- The persisted-data file (`data/saved-template.json`) is written with `0600` permissions (owner read/write only) and is git-ignored so it's never committed, but it is **shared across every browser/user hitting the same running instance** — it is not per-device like browser storage would be. If you deploy this behind the shared access gate for a team, anyone with the link can see and overwrite the saved Gmail login. Only enable "Remember" on an instance you don't share, or leave it unchecked on shared deployments.
 - Signature colors are validated against a strict hex-color pattern before being inserted into the email HTML, to prevent CSS/markup injection via the form.
 - `ACCESS_USER`/`ACCESS_PASSWORD` gate access to the app itself, not to any individual's Gmail account — each user still supplies their own Gmail credentials.
+- On Render's free tier the filesystem is ephemeral, so the saved-template file (and anything in it) is lost on redeploys or restarts.

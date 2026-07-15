@@ -2,9 +2,26 @@ const express = require('express');
 const nodemailer = require('nodemailer');
 const path = require('path');
 const crypto = require('crypto');
+const fs = require('fs');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
+
+const DATA_DIR = path.join(__dirname, 'data');
+const SAVED_DATA_PATH = path.join(DATA_DIR, 'saved-template.json');
+
+function readSavedData() {
+  try {
+    return JSON.parse(fs.readFileSync(SAVED_DATA_PATH, 'utf8'));
+  } catch {
+    return {};
+  }
+}
+
+function writeSavedData(data) {
+  fs.mkdirSync(DATA_DIR, { recursive: true });
+  fs.writeFileSync(SAVED_DATA_PATH, JSON.stringify(data, null, 2), { mode: 0o600 });
+}
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const DEFAULT_MIN_DELAY_MS = 3000;
@@ -62,6 +79,22 @@ function requireAccessCode(req, res, next) {
 app.use(requireAccessCode);
 app.use(express.json({ limit: '2mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
+
+app.get('/api/saved-data', (req, res) => {
+  res.json(readSavedData());
+});
+
+app.post('/api/saved-data', (req, res) => {
+  writeSavedData(req.body || {});
+  res.json({ ok: true });
+});
+
+app.delete('/api/saved-data', (req, res) => {
+  try {
+    fs.unlinkSync(SAVED_DATA_PATH);
+  } catch {}
+  res.json({ ok: true });
+});
 
 function parseRecipients(raw) {
   if (!raw) return [];
