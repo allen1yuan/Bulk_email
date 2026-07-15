@@ -4,6 +4,9 @@
   "private": true,
   "description": "Local web app to send an email to a list of recipients one by one via Gmail SMTP.",
   "main": "server.js",
+  "engines": {
+    "node": ">=18.18.0"
+  },
   "scripts": {
     "dev": "node server.js",
     "start": "node server.js"

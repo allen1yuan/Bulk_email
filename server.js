@@ -1,6 +1,7 @@
 const express = require('express');
 const nodemailer = require('nodemailer');
 const path = require('path');
+const crypto = require('crypto');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -8,6 +9,34 @@ const PORT = process.env.PORT || 3001;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const SEND_DELAY_MS = 1500;
 
+function safeEqual(a, b) {
+  const bufA = Buffer.from(a);
+  const bufB = Buffer.from(b);
+  if (bufA.length !== bufB.length) return false;
+  return crypto.timingSafeEqual(bufA, bufB);
+}
+
+function requireAccessCode(req, res, next) {
+  const user = process.env.ACCESS_USER;
+  const pass = process.env.ACCESS_PASSWORD;
+  if (!user || !pass) return next(); // no gate configured (e.g. local dev)
+
+  const header = req.headers.authorization || '';
+  const [scheme, encoded] = header.split(' ');
+  if (scheme === 'Basic' && encoded) {
+    const decoded = Buffer.from(encoded, 'base64').toString('utf8');
+    const sepIndex = decoded.indexOf(':');
+    const reqUser = decoded.slice(0, sepIndex);
+    const reqPass = decoded.slice(sepIndex + 1);
+    if (safeEqual(reqUser, user) && safeEqual(reqPass, pass)) {
+      return next();
+    }
+  }
+  res.set('WWW-Authenticate', 'Basic realm="Gmail Bulk Sender"');
+  res.status(401).send('Authentication required.');
+}
+
+app.use(requireAccessCode);
 app.use(express.json({ limit: '2mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
 

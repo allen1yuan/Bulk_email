@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: gmail-bulk-sender
+    env: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: ACCESS_USER
+        sync: false
+      - key: ACCESS_PASSWORD
+        sync: false
