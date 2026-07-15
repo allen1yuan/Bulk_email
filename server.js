@@ -282,6 +282,9 @@ app.post('/api/send', async (req, res) => {
   const transporter = nodemailer.createTransport({
     service: 'gmail',
     auth: { user: gmailUser, pass: appPassword },
+    // Some hosts (e.g. Render) advertise outbound IPv6 that isn't actually
+    // routable to Gmail's SMTP endpoints, causing ENETUNREACH. Force IPv4.
+    family: 4,
   });
 
   try {
