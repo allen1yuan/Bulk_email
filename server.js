@@ -116,16 +116,25 @@ app.delete('/api/saved-data', (req, res) => {
 
 function parseRecipients(raw) {
   if (!raw) return [];
-  const list = Array.isArray(raw) ? raw : String(raw).split(/[\n,]/);
+  const list = Array.isArray(raw)
+    ? raw.map((item) => (typeof item === 'object' && item ? item : { email: item }))
+    : String(raw).split(/[\n,]/).map((email) => ({ email }));
   const seen = new Set();
   const result = [];
   for (const item of list) {
-    const trimmed = String(item).trim();
-    if (!trimmed || seen.has(trimmed.toLowerCase())) continue;
-    seen.add(trimmed.toLowerCase());
-    result.push(trimmed);
+    const email = String(item.email || '').trim();
+    const handle = String(item.handle || '').trim();
+    if (!email || seen.has(email.toLowerCase())) continue;
+    seen.add(email.toLowerCase());
+    result.push({ email, handle });
   }
   return result;
+}
+
+function applySubjectTemplate(template, handle) {
+  const subject = template || '';
+  if (!subject.includes('{handle}')) return subject;
+  return subject.split('{handle}').join(handle || '');
 }
 
 function sleep(ms) {
@@ -324,7 +333,7 @@ app.post('/api/send', async (req, res) => {
   const html = buildEmailHtml({ bannerImageUrl, bannerLinkUrl, content, signature, confidentialityText });
 
   for (let i = 0; i < parsedRecipients.length; i++) {
-    const recipient = parsedRecipients[i];
+    const { email: recipient, handle } = parsedRecipients[i];
 
     if (!EMAIL_RE.test(recipient)) {
       failedCount++;
@@ -336,7 +345,7 @@ app.post('/api/send', async (req, res) => {
       await transporter.sendMail({
         from: gmailUser,
         to: recipient,
-        subject: subject || '',
+        subject: applySubjectTemplate(subject, handle) || '',
         text: content || '',
         html,
       });

@@ -36,10 +36,11 @@
         <legend>Compose</legend>
 
         <label for="subject">Subject</label>
-        <input type="text" id="subject" name="subject" placeholder="Subject" />
+        <input type="text" id="subject" name="subject" placeholder='Collaboration "{handle}" & STYLEWE' />
+        <p class="hint" id="subject-example">Use <code>{handle}</code> anywhere in the subject to auto-insert each recipient's Instagram handle.</p>
 
-        <label for="recipients">Recipients (one per line or comma-separated)</label>
-        <textarea id="recipients" name="recipients" rows="5" placeholder="alice@example.com&#10;bob@example.com" required></textarea>
+        <label for="recipients">Recipients &mdash; one per line: <code>email, instagram handle</code> (handle optional)</label>
+        <textarea id="recipients" name="recipients" rows="5" placeholder="alice@example.com, alice_ig&#10;bob@example.com, bobby.style&#10;charlie@example.com" required></textarea>
 
         <label for="content">Message</label>
         <textarea id="content" name="content" rows="8" placeholder="Write your email content here... (blank line = new paragraph)"></textarea>

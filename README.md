@@ -46,9 +46,10 @@ Open the printed URL (defaults to `http://localhost:3001`, or `PORT` if set). No
 ### Sending an email
 
 1. Enter your Gmail address and an [App Password](https://myaccount.google.com/apppasswords) (requires 2-Step Verification enabled on the Google account).
-2. Fill in the subject, recipients (one per line or comma-separated), and message body.
-3. Customize the signature, banner, and footer as needed — the preview updates live.
-4. Set a delay range for sends, then hit Send. Progress for each recipient streams in below the form.
+2. Fill in the subject and message body. Include `{handle}` anywhere in the subject to auto-insert each recipient's Instagram handle (e.g. `Collaboration "{handle}" & STYLEWE`).
+3. Enter recipients one per line as `email, instagram handle` (the handle is optional — omit it and `{handle}` is just removed from that recipient's subject).
+4. Customize the signature, banner, and footer as needed — the preview updates live.
+5. Set a delay range for sends, then hit Send. Progress for each recipient streams in below the form.
 
 ## Gmail sending limits and risk
 

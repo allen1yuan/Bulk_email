@@ -72,6 +72,13 @@ textarea {
   margin: 0.4rem 0 0;
 }
 
+.hint code {
+  background: #f0f0f0;
+  border-radius: 3px;
+  padding: 0.05rem 0.3rem;
+  font-size: 0.8rem;
+}
+
 button {
   background: #1a73e8;
   color: #fff;

@@ -190,6 +190,24 @@ PREVIEW_FIELD_IDS.forEach((id) => {
   document.getElementById(id).addEventListener('change', updatePreview);
 });
 
+const subjectExampleEl = document.getElementById('subject-example');
+
+function updateSubjectExample() {
+  const subjectTemplate = document.getElementById('subject').value;
+  if (!subjectTemplate.includes('{handle}')) {
+    subjectExampleEl.innerHTML = 'Use <code>{handle}</code> anywhere in the subject to auto-insert each recipient\'s Instagram handle.';
+    return;
+  }
+  const recipients = parseRecipients(document.getElementById('recipients').value);
+  const firstWithHandle = recipients.find((r) => r.handle);
+  const sampleHandle = firstWithHandle ? firstWithHandle.handle : '@example_handle';
+  subjectExampleEl.textContent = `Example: ${applySubjectTemplate(subjectTemplate, sampleHandle)}`;
+}
+
+['subject', 'recipients'].forEach((id) => {
+  document.getElementById(id).addEventListener('input', updateSubjectExample);
+});
+
 const SAVED_DATA_ENDPOINT = '/api/saved-data';
 const ALWAYS_SAVED_FIELD_IDS = [
   'gmailUser', 'subject', 'content', 'bannerImageUrl', 'bannerLinkUrl', 'confidentialityText',
@@ -254,7 +272,10 @@ function schedulePersist() {
   persistTimer = setTimeout(persistData, 500);
 }
 
-loadSavedData().then(updatePreview);
+loadSavedData().then(() => {
+  updatePreview();
+  updateSubjectExample();
+});
 
 [...ALWAYS_SAVED_FIELD_IDS, 'appPassword'].forEach((id) => {
   document.getElementById(id).addEventListener('input', schedulePersist);
@@ -282,22 +303,32 @@ document.getElementById('clear-saved-btn').addEventListener('click', async () =>
 function parseRecipients(raw) {
   const seen = new Set();
   const result = [];
-  for (const item of raw.split(/[\n,]/)) {
-    const trimmed = item.trim();
-    if (!trimmed || seen.has(trimmed.toLowerCase())) continue;
-    seen.add(trimmed.toLowerCase());
-    result.push(trimmed);
+  for (const line of raw.split('\n')) {
+    const trimmedLine = line.trim();
+    if (!trimmedLine) continue;
+    const [emailPart, ...rest] = trimmedLine.split(',');
+    const email = (emailPart || '').trim();
+    const handle = rest.join(',').trim();
+    if (!email || seen.has(email.toLowerCase())) continue;
+    seen.add(email.toLowerCase());
+    result.push({ email, handle });
   }
   return result;
 }
 
+function applySubjectTemplate(template, handle) {
+  if (!template || !template.includes('{handle}')) return template;
+  return template.split('{handle}').join(handle || '');
+}
+
 function renderPending(recipients) {
   progressList.innerHTML = '';
-  for (const recipient of recipients) {
+  for (const { email, handle } of recipients) {
     const li = document.createElement('li');
     li.className = 'pending';
-    li.dataset.recipient = recipient;
-    li.innerHTML = `<span>${recipient}</span><span class="status">waiting</span>`;
+    li.dataset.recipient = email;
+    const label = handle ? `${email} (${handle})` : email;
+    li.innerHTML = `<span>${escapeHtml(label)}</span><span class="status">waiting</span>`;
     progressList.appendChild(li);
   }
 }
