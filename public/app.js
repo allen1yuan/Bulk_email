@@ -306,9 +306,13 @@ function parseRecipients(raw) {
   for (const line of raw.split('\n')) {
     const trimmedLine = line.trim();
     if (!trimmedLine) continue;
-    const [emailPart, ...rest] = trimmedLine.split(',');
+    // Excel/Sheets paste produces tab-separated columns; typed-in lists use
+    // a comma. Split on whichever is present (tab takes priority since a
+    // handle could plausibly contain a comma but never a tab).
+    const separator = trimmedLine.includes('\t') ? '\t' : ',';
+    const [emailPart, ...rest] = trimmedLine.split(separator);
     const email = (emailPart || '').trim();
-    const handle = rest.join(',').trim();
+    const handle = rest.join(separator).trim();
     if (!email || seen.has(email.toLowerCase())) continue;
     seen.add(email.toLowerCase());
     result.push({ email, handle });
